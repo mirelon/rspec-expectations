@@ -35,6 +35,13 @@ module RSpec
         end
       end
 
+      class ProxyClass < Struct.new(:original)
+        undef :=~, :method
+        def method_missing(name, *args, &block)
+          original.__send__(name, *args, &block)
+        end
+      end
+
       if RUBY_VERSION.to_f > 1.8
         class BasicClass < BasicObject
           def foo
@@ -55,6 +62,11 @@ module RSpec
       it 'fetches method definitions for objects with method redefined' do
         object = ClassWithMethodOverridden.new
         expect(Expectations.method_handle_for(object, :foo).call).to eq :bar
+      end
+
+      it 'fetches method definitions for proxy objects' do
+        object = ProxyClass.new([])
+        expect(Expectations.method_handle_for(object, :=~)).to be_a Method
       end
 
       it 'fetches method definitions for basic objects', :if => (RUBY_VERSION.to_i >= 2 && RUBY_ENGINE != 'rbx') do

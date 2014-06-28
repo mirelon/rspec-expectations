@@ -59,6 +59,8 @@ module RSpec
     if RUBY_VERSION.to_i >= 2
       def self.method_handle_for(object, method_name)
         KERNEL_METHOD_METHOD.bind(object).call(method_name)
+      rescue NameError
+        object.method(method_name)
       end
     else
       def self.method_handle_for(object, method_name)
@@ -67,6 +69,8 @@ module RSpec
         else
           object.method(method_name)
         end
+      rescue NameError
+        object.method(method_name)
       end
     end
   end
