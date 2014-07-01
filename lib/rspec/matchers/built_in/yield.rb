@@ -407,6 +407,75 @@ module RSpec
           "\n         got: #{@actual.inspect}"
         end
       end
+      
+      # @api private
+      # Provides the implementation for `yield_multiple_args`.
+      # Not intended to be instantiated directly.
+      class YieldMultipleArgs < BaseMatcher
+        def initialize(*args)
+          @expected = args
+        end
+
+        # @private
+        def matches?(block)
+          @probe = YieldProbe.probe(block)
+          return false unless @probe.has_block?
+          @actual = @probe.successive_yield_args
+          args_match?
+        end
+
+        def does_not_match?(block)
+          !matches?(block) && @probe.has_block?
+        end
+
+        # @private
+        def failure_message
+          "expected given block to yield multiple times with arguments, but #{positive_failure_reason}"
+        end
+
+        # @private
+        def failure_message_when_negated
+          "expected given block not to yield multiple times with arguments, but #{negative_failure_reason}"
+        end
+
+        # @private
+        def description
+          desc = "yield multiple args"
+          desc << "(#{expected_arg_description})"
+          desc
+        end
+
+        # @private
+        def supports_block_expectations?
+          true
+        end
+
+      private
+
+        def args_match?
+          values_match?(@expected, @actual) # TODO change to accept any order
+        end
+
+        def expected_arg_description
+          @expected.map { |e| description_of e }.join(", ")
+        end
+
+        def positive_failure_reason
+          return "was not a block" unless @probe.has_block?
+
+          "yielded with unexpected arguments" \
+          "\nexpected: #{surface_descriptions_in(@expected).inspect}" \
+          "\n     got: #{@actual.inspect}"
+        end
+
+        def negative_failure_reason
+          return "was not a block" unless @probe.has_block?
+
+          "yielded with expected arguments" \
+          "\nexpected not: #{surface_descriptions_in(@expected).inspect}" \
+          "\n         got: #{@actual.inspect}"
+        end
+      end
     end
   end
 end
